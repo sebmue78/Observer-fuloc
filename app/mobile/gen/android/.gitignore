@@ -16,4 +16,5 @@ local.properties
 key.properties
 
 /.tauri
-/tauri.settings.gradlekeystore.properties
+/tauri.settings.gradle
+keystore.properties
