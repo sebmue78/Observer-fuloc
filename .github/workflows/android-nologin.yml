@@ -77,6 +77,13 @@ jobs:
           printf "storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" \
             "$RUNNER_TEMP/release.jks" "$KS_PASS" "$KS_ALIAS" "$KS_PASS" > keystore.properties
 
+      - name: cargo-tauri shim (Gradle calls `cargo tauri`)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          printf '#!/bin/sh\nshift\nexec %s/node_modules/.bin/tauri "$@"\n' "$PWD" > "$RUNNER_TEMP/bin/cargo-tauri"
+          chmod +x "$RUNNER_TEMP/bin/cargo-tauri"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
       - name: Build APK
         working-directory: app/mobile
         env:
