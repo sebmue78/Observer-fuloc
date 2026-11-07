@@ -124,6 +124,22 @@ export function useAuth(): AuthContextType {
   return context;
 }
 
+// No-login provider: used when the app is built with VITE_DISABLE_AUTH=true.
+// Auth0 is never initialised; every consumer sees a signed-out, local-only session.
+const NO_AUTH_VALUE: AuthContextType = {
+  isAuthenticated: false,
+  isLoading: false,
+  user: null,
+  login: async () => { console.log('[NoAuth] Login is disabled in this build'); },
+  logout: () => {},
+  getAccessToken: async () => undefined,
+  refreshSession: async () => undefined,
+};
+
+export function NoAuthProvider({ children }: { children: ReactNode }) {
+  return <AuthContext.Provider value={NO_AUTH_VALUE}>{children}</AuthContext.Provider>;
+}
+
 // Mock auth for local dev
 export function useMockAuth(): AuthContextType {
   return {

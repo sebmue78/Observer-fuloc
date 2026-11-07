@@ -6,7 +6,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Auth0Provider } from '@auth0/auth0-react';
 import { platform as getPlatform } from '@tauri-apps/plugin-os';
 import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@contexts/AuthContext';
+import { AuthProvider, NoAuthProvider, useAuth } from '@contexts/AuthContext';
+import { NO_LOGIN } from '@/config/noLogin';
 import { useIOSKeyboard } from '@hooks/useIOSKeyboard';
 import { useAgentGridLayout, GRID_ROW_HEIGHT, GRID_MARGIN } from '@hooks/useAgentGridLayout';
 import GridLayout from 'react-grid-layout';
@@ -1171,7 +1172,7 @@ function AppContent() {
           onTabChange={setActiveTab}
           isMobileMenuOpen={isMobileMenuOpen}
           onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
-          authState={{ isLoading, isAuthenticated, user, loginWithRedirect: login }}
+          authState={NO_LOGIN ? undefined : { isLoading, isAuthenticated, user, loginWithRedirect: login }}
           quotaInfo={quotaInfo}
           onOpenAccount={() => setIsAccountModalOpen(true)}
           onOpenPermissions={() => setIsPermissionsModalOpen(true)}
@@ -1504,6 +1505,10 @@ function AppContent() {
           onServerConnected={() => { setCustomServers(getCustomServers()); fetchModels(); }}
           onLogin={login}
           onToggleObServer={() => setIsUsingObServer(true)}
+          onUseOnDevice={() => {
+            localStorage.setItem('observer_onboarding_complete_local', 'true');
+            setActiveTab('models');
+          }}
           isAuthenticated={isAuthenticated}
           hostingContext={hostingContext}
           hasPendingImport={hasPendingImport}
@@ -1575,18 +1580,20 @@ function AppContent() {
 }
 
 export function App() {
-  const isAuthDisabled = import.meta.env.VITE_DISABLE_AUTH === 'true';
+  const isAuthDisabled = NO_LOGIN;
 
   Logger.info('AUTH', `is Auth disabled?: ${isAuthDisabled}`);
 
   if (isAuthDisabled) {
     Logger.info('isAuthDisabled', "Auth0 is disabled for local development.");
     return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/*" element={<AppContent />} />
-        </Routes>
-      </BrowserRouter>
+      <NoAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/*" element={<AppContent />} />
+          </Routes>
+        </BrowserRouter>
+      </NoAuthProvider>
     );
   }
 

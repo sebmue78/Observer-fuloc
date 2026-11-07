@@ -24,8 +24,10 @@ android {
     compileSdk = 36
     namespace = "com.observer.ai"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.observer.ai"
+        // No-login fork: allow plain http so a LAN server (e.g. http://192.168.x.x:11434) works.
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
+        // Separate id so it installs next to the official Observer app.
+        applicationId = "com.observer.ai.local"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

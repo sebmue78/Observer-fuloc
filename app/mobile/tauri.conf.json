@@ -4,7 +4,7 @@
   "version": "3.2.2",
   "identifier": "com.observer.ai",
   "build": {
-    "frontendDist": "/Users/jay/repos/Observer/app/dist",
+    "frontendDist": "../dist",
     "devUrl": "http://10.0.0.226:3001"
   },
   "app": {

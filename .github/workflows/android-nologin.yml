@@ -1,0 +1,91 @@
+name: Android APK (no login)
+
+# Builds the "Observer Local" APK: no Auth0 login, local models or your own server only.
+# Optional repository secrets for a stable signing key (so updates install over each other):
+#   ANDROID_KEYSTORE_BASE64  base64 of a .jks file
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+# Without them a throwaway key is generated for each run.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [no-login]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.5.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;27.2.12479018" "cmake;3.31.6"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/mobile
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build frontend (login disabled)
+        env:
+          VITE_DISABLE_AUTH: 'true'
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: pnpm exec vite build --sourcemap false
+
+      - name: Signing key
+        working-directory: app/mobile/gen/android
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          else
+            KS_PASS=$(openssl rand -hex 12); KS_ALIAS=observer-local
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias "$KS_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KS_PASS" -keypass "$KS_PASS" \
+              -dname "CN=Observer Local"
+          fi
+          printf "storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" \
+            "$RUNNER_TEMP/release.jks" "$KS_PASS" "$KS_ALIAS" "$KS_PASS" > keystore.properties
+
+      - name: Build APK
+        working-directory: app/mobile
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+          ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: ../node_modules/.bin/tauri android build --apk true --aab false --target aarch64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observer-local-apk
+          path: app/mobile/gen/android/app/build/outputs/apk/**/*.apk
