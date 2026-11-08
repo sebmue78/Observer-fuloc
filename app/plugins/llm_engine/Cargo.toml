@@ -12,9 +12,14 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 log = "0.4"
 base64 = "0.21"
-llama-cpp-2 = { version = "0.1.146", features = ["mtmd"] }
+# Fork (Observer Local): default features spelled out so OpenMP can be left out on Windows ARM64,
+# where clang-cl ships no OpenMP runtime. Other platforms get the same features as before.
+llama-cpp-2 = { version = "0.1.146", default-features = false, features = ["mtmd", "android-shared-stdcxx"] }
 llama-cpp-sys-2 = "=0.1.146"
 encoding_rs = "0.8"
 
 [target.'cfg(target_os = "ios")'.dependencies]
 llama-cpp-2 = { version = "0.1.146", features = ["metal"] }
+
+[target.'cfg(not(all(windows, target_arch = "aarch64")))'.dependencies]
+llama-cpp-2 = { version = "0.1.146", default-features = false, features = ["openmp"] }

@@ -39,12 +39,18 @@ Without `VITE_DISABLE_AUTH=true` the frontend behaves like the original.
 |---|---|
 | `tauri.conf.json` | Name "Observer Local", identifier `com.observer.ai.local`. **The auto-updater no longer points at the official releases**, which would otherwise replace this build with the login version. No updater artifacts. macOS builds are ad-hoc signed (`-`) instead of using the original author's Apple Developer ID. |
 
+### Local model engine (`app/plugins/llm_engine`)
+
+| File | Change |
+|---|---|
+| `Cargo.toml` | `llama-cpp-2` features are spelled out, and OpenMP is left out on Windows ARM64 only, because clang-cl has no OpenMP runtime there and llama.cpp falls back to its own thread pool. All other platforms build with the same features as before. |
+
 ### Build and docs
 
 | File | Change |
 |---|---|
 | `.github/workflows/android-nologin.yml` (new) | Builds a signed arm64 APK. Uses the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` if set. |
-| `.github/workflows/desktop-nologin.yml` (new) | Builds macOS (arm64, Intel), Windows (x64, ARM64) and Linux (x64) installers. |
+| `.github/workflows/desktop-nologin.yml` (new) | Builds macOS (arm64, Intel), Windows (x64, ARM64) and Linux (x64) installers. Windows ARM64 is built with clang-cl, because llama.cpp does not support MSVC on ARM. |
 | `README.md` | Fork notice, download and install instructions, and fork notes on unavailable features, support channels and code signing. |
 | `FORK_CHANGES.md` (new) | This file. |
 
