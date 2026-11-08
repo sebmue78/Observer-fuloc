@@ -57,7 +57,7 @@ The builds are not code-signed by Apple or Microsoft:
 
 On first start, choose **Use an on-device model** or enter your own server, e.g. `http://192.168.1.10:11434` for Ollama on your LAN (plain `http` is allowed in the Android build).
 
-To build locally, set `VITE_DISABLE_AUTH=true` when building the frontend (`cd app && VITE_DISABLE_AUTH=true pnpm build`), then build `app/desktop` or `app/mobile` with the Tauri CLI as usual. The workflows in `.github/workflows/*-nologin.yml` show the exact steps. To publish a new release, push a tag such as `local-v3.2.3`.
+To build locally, set `VITE_DISABLE_AUTH=true` when building the frontend (`cd app && VITE_DISABLE_AUTH=true pnpm build`), then build `app/desktop` or `app/mobile` with the Tauri CLI as usual. The workflows in `.github/workflows/*-nologin.yml` show the exact steps. To publish a new release, push to the `release` branch (`git push origin no-login:release`) or start **Release (no login)** with *Run workflow* in the Actions tab.
 
 ### Original Observer AI
 

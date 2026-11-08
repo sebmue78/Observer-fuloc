@@ -1,10 +1,13 @@
 name: Release (no login)
 
-# Push a tag like `local-v3.2.2` to build every platform and publish a GitHub Release
-# with all installers. Can also be started by hand from the Actions tab.
+# Builds every platform and publishes a GitHub Release with all installers. Triggers:
+#   - push to the `release` branch: the tag is local-v<version from app/desktop/tauri.conf.json>
+#   - push of a tag like `local-v3.2.2`
+#   - "Run workflow" in the Actions tab, with a tag of your choice
 
 on:
   push:
+    branches: [release]
     tags: ['local-v*']
   workflow_dispatch:
     inputs:
@@ -28,6 +31,16 @@ jobs:
     needs: [android, desktop]
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v5
+
+      - name: Release tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then TAG="${{ github.event.inputs.tag }}"
+          elif [ "${{ github.ref_type }}" = tag ]; then TAG="${{ github.ref_name }}"
+          else TAG="local-v$(jq -r .version app/desktop/tauri.conf.json)"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - uses: actions/download-artifact@v4
         with:
           pattern: observer-local-*
@@ -36,7 +49,7 @@ jobs:
 
       - name: Name files
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${{ steps.tag.outputs.tag }}"
           VER="${TAG#local-v}"
           cd dist
           find . -name '*.apk' -exec mv {} "Observer-Local_${VER}_android-arm64.apk" \;
@@ -44,8 +57,8 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Observer Local ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Observer Local ${{ steps.tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
           files: dist/*
           body: |
