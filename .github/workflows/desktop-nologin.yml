@@ -71,6 +71,32 @@ jobs:
             libwebkit2gtk-4.1-dev=2.44.* libwebkit2gtk-4.1-0=2.44.* gir1.2-webkit2-4.1=2.44.* \
             libjavascriptcoregtk-4.1-dev=2.44.* libjavascriptcoregtk-4.1-0=2.44.* gir1.2-javascriptcoregtk-4.1=2.44.*
 
+      # llama.cpp refuses MSVC on ARM ("use clang"): build Windows ARM64 with clang-cl + Ninja
+      - name: MSVC dev environment (Windows ARM64)
+        if: matrix.target == 'aarch64-pc-windows-msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
+      - name: Use clang-cl (Windows ARM64)
+        if: matrix.target == 'aarch64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $cl = Get-Command clang-cl -ErrorAction SilentlyContinue
+          if (-not $cl) {
+            $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+            $cand = Get-ChildItem -Path "$vs\VC\Tools\Llvm", "$env:ProgramFiles\LLVM\bin" -Recurse -Filter clang-cl.exe -ErrorAction SilentlyContinue |
+              Sort-Object { $_.FullName -notmatch 'ARM64' } | Select-Object -First 1
+            if (-not $cand) { winget install --id LLVM.LLVM --accept-source-agreements --accept-package-agreements --silent; $cand = Get-Item "$env:ProgramFiles\LLVM\bin\clang-cl.exe" }
+            $dir = $cand.DirectoryName
+            "$dir" | Out-File -FilePath $env:GITHUB_PATH -Append
+            $env:PATH = "$dir;$env:PATH"
+          }
+          clang-cl --version
+          "CC=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CXX=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CMAKE_GENERATOR=Ninja" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Install JS dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile --ignore-scripts
