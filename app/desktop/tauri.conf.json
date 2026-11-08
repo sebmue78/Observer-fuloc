@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Observer",
+  "productName": "Observer Local",
   "version": "3.2.2",
-  "identifier": "com.observer.ai",
+  "identifier": "com.observer.ai.local",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3001"
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Observer",
+        "title": "Observer Local",
         "width": 1200,
         "height": 1000,
         "resizable": true,
@@ -33,14 +33,18 @@
     ],
     "security": {
       "csp": null,
-      "capabilities": ["default", "overlay", "screen-selector"]
+      "capabilities": [
+        "default",
+        "overlay",
+        "screen-selector"
+      ]
     },
     "withGlobalTauri": true,
     "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -57,21 +61,25 @@
     ],
     "macOS": {
       "entitlements": "./Entitlements.plist",
-      "signingIdentity": "Developer ID Application: Luis Rodrigo Medina (55RWNTY4PH)"
+      "signingIdentity": "-"
     }
   },
   "plugins": {
     "deep-link": {
       "desktop": [
-        { "schemes": ["observer"] }
+        {
+          "schemes": [
+            "observer"
+          ]
+        }
       ]
     },
     "updater": {
       "active": true,
-      "dialog": true, 
+      "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExODcyRkI1MDUwRDkyRUIKUldUcmtnMEZ0UytIRVMxZWEvcEFsZHQzRmlCZWZONjlDVENKOUFnUWk3d1ZVZERkU2tvOUFlTjgK",
       "endpoints": [
-        "https://github.com/Roy3838/Observer/releases/latest/download/latest.json"
+        "https://github.com/sebmue78/Observer-fuloc/releases/latest/download/latest.json"
       ]
     }
   }
