@@ -104,6 +104,8 @@ jobs:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
           ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
           ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+          TAURI_APP_PATH: ${{ github.workspace }}/app/mobile
+          TAURI_FRONTEND_PATH: ${{ github.workspace }}/app
         run: ../node_modules/.bin/tauri android build --apk true --aab false --target aarch64
 
       - uses: actions/upload-artifact@v4

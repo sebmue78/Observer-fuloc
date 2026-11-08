@@ -99,6 +99,9 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '10.15' || '' }}
           # llama.cpp's vendored cpp-httplib breaks against newer OpenSSL headers (see upstream release.yml)
           CMAKE_DISABLE_FIND_PACKAGE_OpenSSL: 'TRUE'
+          # app/ contains two Tauri projects (desktop + mobile); pin the one to build
+          TAURI_APP_PATH: ${{ github.workspace }}/app/desktop
+          TAURI_FRONTEND_PATH: ${{ github.workspace }}/app
         run: pnpm exec tauri build --target ${{ matrix.target }}
 
       - uses: actions/upload-artifact@v4
