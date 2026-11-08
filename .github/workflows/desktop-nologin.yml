@@ -96,6 +96,8 @@ jobs:
           "CC=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
           "CXX=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
           "CMAKE_GENERATOR=Ninja" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # clang-cl does not enable C++ exceptions by default (MSVC-style /EHsc needed)
+          "CXXFLAGS=/EHsc" | Out-File -FilePath $env:GITHUB_ENV -Append
           # Git's /usr/bin/link.exe shadows MSVC's linker in bash steps; point cargo at the real one
           $link = Get-Command link.exe -All -CommandType Application | Where-Object { $_.Source -notmatch '\\Git\\' } | Select-Object -First 1
           "CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER=$($link.Source)" | Out-File -FilePath $env:GITHUB_ENV -Append
