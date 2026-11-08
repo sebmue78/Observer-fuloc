@@ -158,6 +158,16 @@ const StartupDialog: React.FC<StartupDialogProps> = ({
           >
             Skip for now
           </button>
+          <p className="mt-4 text-[11px] leading-snug text-gray-400 text-center">
+            Unofficial no-login fork of{' '}
+            <a href="https://github.com/Roy3838/Observer" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">
+              Observer AI
+            </a>{' '}
+            by Roy Medina (AGPLv3) ·{' '}
+            <a href="https://github.com/sebmue78/Observer-fuloc/blob/no-login/FORK_CHANGES.md" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">
+              changes
+            </a>
+          </p>
         </div>
       </div>
     );

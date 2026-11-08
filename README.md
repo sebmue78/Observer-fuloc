@@ -1,3 +1,15 @@
+# Observer Local (no-login fork of Observer AI)
+
+> **This is an unofficial fork.** It is based on [Observer AI](https://github.com/Roy3838/Observer) by Roy Medina and is not affiliated with or supported by the original project.
+>
+> **What is different:** this build runs **without any login or Observer account**. Auth0 is never loaded, and the app works only with on-device models or your own OpenAI-compatible server (Ollama, llama.cpp, LM Studio, vLLM). Features that need the Observer cloud (hosted models, SMS, WhatsApp, Email, Pushover, voice calls) are not available. Discord, Telegram, Gotify, system notifications and memory work.
+>
+> The app is called **Observer Local** (`com.observer.ai.local`), so it installs next to the official app. All changes live on the [`no-login`](https://github.com/sebmue78/Observer-fuloc/tree/no-login) branch and are listed in [FORK_CHANGES.md](FORK_CHANGES.md). For the official app, support and updates go to the [original repository](https://github.com/Roy3838/Observer).
+
+The original README follows, with the parts that differ in this fork marked.
+
+---
+
 # Observer AI
 
 [![Release](https://img.shields.io/github/v/release/Roy3838/Observer?style=flat-square)](https://github.com/Roy3838/Observer/releases/latest/)
@@ -21,7 +33,33 @@ Observer is a local-first AI agent that watches your screen, camera and audio, a
 - When an appointment is available, send me a Whatsapp. 
 - When an item is back in stock, send me a Telegram.
 
+> **Fork note:** calls, SMS and WhatsApp go through the Observer cloud and need an account, so they do not work in Observer Local. Use Telegram, Discord or Gotify instead.
+
 ## Get started
+
+### Observer Local (this fork)
+
+Builds are produced by GitHub Actions on the `no-login` branch. Open the [Actions tab](https://github.com/sebmue78/Observer-fuloc/actions), pick the latest successful run and download the artifact:
+
+| Workflow | Artifact | Platform |
+|---|---|---|
+| Android APK (no login) | `observer-local-apk` | Android, arm64 |
+| Desktop apps (no login) | `observer-local-macos-arm64` | macOS, Apple Silicon (`.dmg`) |
+| | `observer-local-macos-intel` | macOS, Intel (`.dmg`) |
+| | `observer-local-windows-x64` | Windows x64 (`.exe` / `.msi`) |
+| | `observer-local-windows-arm64` | Windows on ARM, e.g. Snapdragon (`.exe` / `.msi`) |
+| | `observer-local-linux-x64` | Linux (`.AppImage` / `.deb`) |
+
+The builds are not code-signed by Apple or Microsoft:
+- **macOS:** right-click the app and choose *Open* the first time, or run `xattr -cr "/Applications/Observer Local.app"`.
+- **Windows:** in the SmartScreen prompt choose *More info → Run anyway*.
+- **Android:** allow installing from unknown sources when asked.
+
+On first start, choose **Use an on-device model** or enter your own server, e.g. `http://192.168.1.10:11434` for Ollama on your LAN (plain `http` is allowed in the Android build).
+
+To build locally, set `VITE_DISABLE_AUTH=true` when building the frontend (`cd app && VITE_DISABLE_AUTH=true pnpm build`), then build `app/desktop` or `app/mobile` with the Tauri CLI as usual. The workflows in `.github/workflows/*-nologin.yml` show the exact steps.
+
+### Original Observer AI
 
 **Web app (no install):** open [app.observer-ai.com](https://app.observer-ai.com/) and download a model to run it in your browser.
 
@@ -176,12 +214,18 @@ Join the [Discord](https://discord.com/invite/wnBb7ZQDUC) or [r/ObserverAI](http
 
 Contributions are welcome: fork the repo, create a feature branch and open a pull request.
 
+> **Fork note:** the channels above belong to the original project. Please report problems with Observer Local in this fork's [issues](https://github.com/sebmue78/Observer-fuloc/issues), not to the Observer team.
+
 ## Sponsors
 
 [<img src="https://signpath.org/assets/logo.svg" width="150" alt="SignPath"/>](https://signpath.org/)
 
 Free code signing on Windows provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
+> **Fork note:** this sponsorship covers the official releases only. Observer Local builds are not signed.
+
 ## License
 
 [AGPLv3](LICENSE). Built by Roy Medina for the Observer AI community.
+
+Observer Local is a modified version of Observer AI, distributed under the same AGPLv3 license. The modifications are listed in [FORK_CHANGES.md](FORK_CHANGES.md); the full source of this fork is in this repository.
