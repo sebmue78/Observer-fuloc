@@ -51,6 +51,7 @@ Without `VITE_DISABLE_AUTH=true` the frontend behaves like the original.
 |---|---|
 | `.github/workflows/android-nologin.yml` (new) | Builds a signed arm64 APK. Uses the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` if set. |
 | `.github/workflows/desktop-nologin.yml` (new) | Builds macOS (arm64, Intel), Windows (x64, ARM64) and Linux (x64) installers. Windows ARM64 is built with clang-cl, because llama.cpp does not support MSVC on ARM. |
+| `.github/workflows/release-nologin.yml` (new) | On a `local-v*` tag, builds every platform and publishes a GitHub Release with all installers. |
 | `README.md` | Fork notice, download and install instructions, and fork notes on unavailable features, support channels and code signing. |
 | `FORK_CHANGES.md` (new) | This file. |
 

@@ -8,12 +8,13 @@ name: Android APK (no login)
 # Without them a throwaway key is generated for each run.
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches: [no-login]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: android-nologin-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

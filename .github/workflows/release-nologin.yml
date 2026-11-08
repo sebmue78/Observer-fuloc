@@ -1,0 +1,64 @@
+name: Release (no login)
+
+# Push a tag like `local-v3.2.2` to build every platform and publish a GitHub Release
+# with all installers. Can also be started by hand from the Actions tab.
+
+on:
+  push:
+    tags: ['local-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. local-v3.2.2 (created if missing)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    uses: ./.github/workflows/android-nologin.yml
+    secrets: inherit
+
+  desktop:
+    uses: ./.github/workflows/desktop-nologin.yml
+    secrets: inherit
+
+  release:
+    needs: [android, desktop]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: observer-local-*
+          path: dist
+          merge-multiple: true
+
+      - name: Name files
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VER="${TAG#local-v}"
+          cd dist
+          find . -name '*.apk' -exec mv {} "Observer-Local_${VER}_android-arm64.apk" \;
+          ls -la
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Observer Local ${{ github.event.inputs.tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          files: dist/*
+          body: |
+            **Observer Local**: an unofficial no-login fork of [Observer AI](https://github.com/Roy3838/Observer) by Roy Medina (AGPLv3).
+            It runs on on-device models or your own server, with no account needed. Changes are listed in [FORK_CHANGES.md](https://github.com/${{ github.repository }}/blob/no-login/FORK_CHANGES.md).
+
+            | Platform | File |
+            |---|---|
+            | macOS Apple Silicon | `*_aarch64.dmg` |
+            | macOS Intel | `*_x64.dmg` |
+            | Windows x64 | `*_x64-setup.exe` or `*_x64_*.msi` |
+            | Windows ARM64 (Snapdragon) | `*_arm64-setup.exe` or `*_arm64_*.msi` |
+            | Linux | `*.AppImage` or `*.deb` |
+            | Android (arm64) | `*_android-arm64.apk` |
+
+            These builds are not code-signed. On macOS, right-click the app and choose **Open** the first time. On Windows, choose **More info → Run anyway**.

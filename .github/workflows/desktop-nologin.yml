@@ -5,12 +5,13 @@ name: Desktop apps (no login)
 # Not code-signed: macOS needs right-click > Open (or xattr), Windows shows a SmartScreen prompt.
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches: [no-login]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: desktop-nologin-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

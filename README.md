@@ -39,7 +39,7 @@ Observer is a local-first AI agent that watches your screen, camera and audio, a
 
 ### Observer Local (this fork)
 
-Builds are produced by GitHub Actions on the `no-login` branch. Open the [Actions tab](https://github.com/sebmue78/Observer-fuloc/actions), pick the latest successful run and download the artifact:
+Download the installers from the [Releases page](https://github.com/sebmue78/Observer-fuloc/releases/latest). Test builds of the latest `no-login` commit are also attached as artifacts to each run in the [Actions tab](https://github.com/sebmue78/Observer-fuloc/actions):
 
 | Workflow | Artifact | Platform |
 |---|---|---|
@@ -57,7 +57,7 @@ The builds are not code-signed by Apple or Microsoft:
 
 On first start, choose **Use an on-device model** or enter your own server, e.g. `http://192.168.1.10:11434` for Ollama on your LAN (plain `http` is allowed in the Android build).
 
-To build locally, set `VITE_DISABLE_AUTH=true` when building the frontend (`cd app && VITE_DISABLE_AUTH=true pnpm build`), then build `app/desktop` or `app/mobile` with the Tauri CLI as usual. The workflows in `.github/workflows/*-nologin.yml` show the exact steps.
+To build locally, set `VITE_DISABLE_AUTH=true` when building the frontend (`cd app && VITE_DISABLE_AUTH=true pnpm build`), then build `app/desktop` or `app/mobile` with the Tauri CLI as usual. The workflows in `.github/workflows/*-nologin.yml` show the exact steps. To publish a new release, push a tag such as `local-v3.2.3`.
 
 ### Original Observer AI
 
