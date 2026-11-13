@@ -5,7 +5,8 @@ It is an unofficial fork and is not affiliated with the original project.
 
 - **Fork:** https://github.com/sebmue78/Observer-fuloc, branch `no-login`
 - **Based on:** `Roy3838/Observer` `main` at commit `0bccd31` (app version 3.2.2)
-- **Modified:** 2026-11-08 by Sebastian (sebmue78)
+- **Last synced with upstream:** 2026-11-13, `main` at commit `405e4f5` (app version 3.2.4)
+- **Modified:** 2026-11-08 and 2026-11-13 by Sebastian (sebmue78)
 - **License:** GNU AGPLv3, unchanged (see [LICENSE](LICENSE))
 
 ## What changed and why
@@ -37,7 +38,7 @@ Without `VITE_DISABLE_AUTH=true` the frontend behaves like the original.
 
 | File | Change |
 |---|---|
-| `tauri.conf.json` | Name "Observer Local", identifier `com.observer.ai.local`. **The auto-updater no longer points at the official releases**, which would otherwise replace this build with the login version. No updater artifacts. macOS builds are ad-hoc signed (`-`) instead of using the original author's Apple Developer ID. |
+| `tauri.conf.json` | Name "Observer Local", identifier `com.observer.ai.local`; the version follows upstream. **The auto-updater no longer points at the official releases**, which would otherwise replace this build with the login version. No updater artifacts. macOS builds are ad-hoc signed (`-`) instead of using the original author's Apple Developer ID. |
 
 ### Local model engine (`app/plugins/llm_engine`)
 

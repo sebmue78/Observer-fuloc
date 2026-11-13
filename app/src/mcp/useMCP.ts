@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TokenProvider } from '@utils/main_loop';
-import { ModelManager } from '@utils/ModelManager';
+import { ModelManager, UnauthorizedError } from '@utils/ModelManager';
 import { Logger } from '@utils/logging';
 import { StreamManager } from '@utils/streamManager';
 import { releaseCaptureHolds, TURN_HOLDER } from './capture';
@@ -44,7 +44,7 @@ const DEFAULT_MODEL = 'gemini-2.5-flash-lite-free';
 const LOG_SOURCE = 'MCP';
 
 /** Tools that change the dashboard's agent list / running state. */
-const MUTATING_TOOLS = new Set(['create_agent', 'edit_agent', 'start_agent', 'stop_agent']);
+const MUTATING_TOOLS = new Set(['create_agent', 'edit_agent', 'start_agent', 'stop_agent', 'delete_agent']);
 
 /** The last non-empty assistant prose in `messages` (the runner pads empty turns with U+200B). */
 function finalAssistantText(messages: WireMessage[]): string | undefined {
@@ -278,6 +278,14 @@ export function useMCP(options: UseMCPOptions) {
         } else {
           const text = err instanceof Error ? err.message : 'An unknown error occurred.';
           Logger.error(LOG_SOURCE, `Run failed: ${text}`, { error: err });
+          // 429 from the creator's model: the Logger fires 'quotaExceeded', which opens the
+          // upgrade sheet so a dead-end error bubble comes with a CTA.
+          if (err instanceof UnauthorizedError) {
+            Logger.warn(LOG_SOURCE, 'Agent creator stopped due to quota limit', {
+              logType: 'quota-exceeded',
+              quotaType: 'agent_creator',
+            });
+          }
           wireRef.current.push({ role: 'assistant', content: `Sorry, I ran into an error: ${text}` });
           syncMessages();
         }

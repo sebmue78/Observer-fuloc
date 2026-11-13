@@ -8,9 +8,14 @@
 //                     brings the user back to Observer before the picker opens.
 //   method          — how the agent tells the user. A channel the user already has working
 //                     resolves silently with no sheet at all; otherwise the sheet sets it up
-//                     (QR for phone/Telegram, permission for browser, a field for the rest) and
-//                     only returns once it works. The MCP never handles codes itself.
+//                     (QR for phone/Telegram, a test notification for browser/system, a field
+//                     for the rest) and only returns once it works. The MCP never handles codes
+//                     itself. The test notification is what makes the browser / OS ask for
+//                     permission now, from a tap, instead of when the agent first fires.
 //   model           — local or cloud.
+//   lock_phone      — a button that asks for the permission lockPhone() needs (Screen Time on
+//                     iOS, "Display over other apps" on Android). The agent runs in the
+//                     background where that prompt can't show, so it's granted here, from a tap.
 //
 // Observer never sends to raw phone numbers: phone channels resolve to the user's 4-word code.
 
@@ -18,7 +23,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import {
   Bell, Mail, Hash, Phone, MessageSquare, Monitor, MonitorUp, Camera, Cloud, HardDrive,
-  ChevronLeft, Loader2, RefreshCw, X, ArrowRight,
+  ChevronLeft, Loader2, RefreshCw, X, ArrowRight, Lock,
 } from 'lucide-react';
 import { FaWhatsapp, FaTelegramPlane } from 'react-icons/fa';
 import WhitelistQR from '@components/whitelist/WhitelistQR';
@@ -26,7 +31,8 @@ import TelegramQR from '@components/whitelist/TelegramQR';
 import { useWhitelistPolling, useTelegramStatus, checkNumber } from '@components/whitelist/shared';
 import { useAuth } from '@contexts/AuthContext';
 import { SensorSettings } from '@utils/settings';
-import { isDesktop } from '@utils/platform';
+import { isDesktop, isIOS } from '@utils/platform';
+import { requestPhoneLockPermission, sendTestNotification, browserNotifyReady } from '@utils/handlers/utils';
 import { captureScreen, captureCamera } from '../../mcp/capture';
 import { fetchStatus } from '../../mcp/remote';
 import type { NotifyMethod, UserInfoRequest, UserInfoResponse } from '../../mcp/types';
@@ -213,6 +219,43 @@ const CaptureModal: React.FC<UserInfoModalProps> = ({ req, onResolve }) => {
   );
 };
 
+// ---- lock_phone -----------------------------------------------------------------------------
+
+const LockPhoneModal: React.FC<UserInfoModalProps> = ({ req, onResolve }) => {
+  const ios = isIOS();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // iOS shows the Screen Time sheet; Android opens Settings and resolves when the user comes back.
+  const allow = () => {
+    setBusy(true);
+    setError(null);
+    requestPhoneLockPermission()
+      .then(status => {
+        if (status.authorized) onResolve(req.requestId, { value: 'authorized' });
+        else setError(ios ? 'Screen Time access was not allowed. Try again.' : 'Turn on "Allow display over other apps" for Observer, then come back.');
+      })
+      .catch(() => setError(ios ? 'Screen Time access was not allowed. Try again.' : 'Could not open the permission settings. Try again.'))
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <Sheet
+      icon={<Lock className="h-6 w-6" />}
+      title="Let Observer lock your phone"
+      subtitle={req.reason ?? (ios
+        ? 'Your agent can block other apps until it unlocks them or the timer ends. iOS asks once for Screen Time access.'
+        : 'Your agent can block other apps until it unlocks them or the timer ends. Turn on "Display over other apps" for Observer on the next screen.')}
+      onClose={() => onResolve(req.requestId, { value: '', skipped: true })}
+    >
+      <PrimaryButton onClick={allow} busy={busy}>
+        Allow <ArrowRight className="h-4 w-4" />
+      </PrimaryButton>
+      {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
+    </Sheet>
+  );
+};
+
 // ---- method ---------------------------------------------------------------------------------
 
 /**
@@ -223,9 +266,9 @@ const CaptureModal: React.FC<UserInfoModalProps> = ({ req, onResolve }) => {
 async function silentValue(method: NotifyMethod, getToken: () => Promise<string | undefined>): Promise<string | null> {
   switch (method) {
     case 'system':
-      return '';
+      return SensorSettings.getSystemNotifyConfirmed() ? '' : null;
     case 'browser':
-      return typeof Notification === 'undefined' || Notification.permission === 'granted' ? '' : null;
+      return browserNotifyReady() ? '' : null;
     case 'whatsapp':
     case 'sms':
     case 'voice': {
@@ -276,12 +319,8 @@ const MethodModal: React.FC<UserInfoModalProps> = ({ req, onResolve }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, method]);
 
+  // browser / system ask for permission from NotifySetup's test button, not from this click.
   const pick = (m: NotifyMethod) => {
-    // Ask for notification permission inside the click: browsers only allow it from a gesture.
-    if (m === 'browser' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().finally(() => { setMethod(m); setPhase('checking'); });
-      return;
-    }
     setMethod(m);
     setPhase('checking');
   };
@@ -323,9 +362,8 @@ const MethodModal: React.FC<UserInfoModalProps> = ({ req, onResolve }) => {
       {phase === 'setup' && (
         isPhone(method) ? <PhoneSetup method={method} getToken={getAccessToken} onConnected={connected} />
           : method === 'telegram' ? <TelegramSetup onConnected={connected} />
-            : method === 'browser' ? <BrowserSetup onConnected={() => connected('')} />
+            : method === 'browser' || method === 'system' ? <NotifySetup method={method} onConnected={() => connected('')} />
               : method === 'email' ? <EmailSetup onConnected={connected} onOther={choosePick} />
-              : method === 'system' ? null
                 : <ContactSetup kind={method} onConnected={connected} />
       )}
     </Sheet>
@@ -374,23 +412,73 @@ const TelegramSetup: React.FC<{ onConnected: (code: string) => void }> = ({ onCo
   );
 };
 
-const BrowserSetup: React.FC<{ onConnected: () => void }> = ({ onConnected }) => {
-  const [denied, setDenied] = useState(typeof Notification !== 'undefined' && Notification.permission === 'denied');
-  const allow = () => {
-    Notification.requestPermission().then(p => (p === 'granted' ? onConnected() : setDenied(true)));
+/**
+ * browser / system: push one test notification from the click, so the browser or OS asks for
+ * permission now instead of the first time the agent fires, then have the user confirm they saw
+ * it. Granted permission alone isn't enough: the OS can still mute the browser or Observer.
+ */
+const NotifySetup: React.FC<{ method: 'browser' | 'system'; onConnected: () => void }> = ({ method, onConnected }) => {
+  const browser = method === 'browser';
+  const [phase, setPhase] = useState<'idle' | 'sent' | 'missing' | 'denied'>(
+    browser && typeof Notification !== 'undefined' && Notification.permission === 'denied' ? 'denied' : 'idle',
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Called straight from the click, before any await, so the permission prompt can show.
+  const send = () => {
+    setBusy(true);
+    setError(null);
+    sendTestNotification(method)
+      .then(result => setPhase(result === 'denied' ? 'denied' : 'sent'))
+      .catch(() => setError(browser
+        ? 'This browser can\'t show notifications. Choose another method.'
+        : 'Could not reach the Observer app to send it. Try again.'))
+      .finally(() => setBusy(false));
   };
+
+  const saw = () => {
+    if (!browser) SensorSettings.setSystemNotifyConfirmed(true);
+    onConnected();
+  };
+
+  const muted = browser
+    ? 'Your system may be muting this browser. Turn on its notifications in System Settings → Notifications (Mac) or Settings → System → Notifications (Windows), and turn off Focus / Do Not Disturb.'
+    : 'Turn on notifications for Observer in System Settings → Notifications (Mac) or Settings → System → Notifications (Windows), and turn off Focus / Do Not Disturb.';
+
   return (
     <div className="flex flex-col items-center gap-4">
-      {denied ? (
+      {phase === 'idle' && (
         <>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Notifications are blocked for this site. Click the icon left of the address bar, allow notifications, then continue.
+            I'll send you a test notification.{browser ? ' When your browser asks, choose Allow.' : ' If your computer asks, choose Allow.'}
           </p>
-          <PrimaryButton onClick={allow}>I've allowed them</PrimaryButton>
+          <PrimaryButton onClick={send} busy={busy}>Send test notification <ArrowRight className="h-4 w-4" /></PrimaryButton>
         </>
-      ) : (
-        <PrimaryButton onClick={allow}>Allow notifications <ArrowRight className="h-4 w-4" /></PrimaryButton>
       )}
+      {phase === 'sent' && (
+        <>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Did the test notification show up?</p>
+          <PrimaryButton onClick={saw}>Yes, I see it</PrimaryButton>
+          <TextButton onClick={() => setPhase('missing')}>No, nothing showed up</TextButton>
+        </>
+      )}
+      {phase === 'missing' && (
+        <>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">{muted}</p>
+          <PrimaryButton onClick={send} busy={busy}><RefreshCw className="h-4 w-4" /> Send again</PrimaryButton>
+          <TextButton onClick={saw}>It showed up now</TextButton>
+        </>
+      )}
+      {phase === 'denied' && (
+        <>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Notifications are blocked for this site. Click the icon left of the address bar, allow notifications, then send the test again.
+          </p>
+          <PrimaryButton onClick={send} busy={busy}><RefreshCw className="h-4 w-4" /> Send again</PrimaryButton>
+        </>
+      )}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 };
@@ -540,6 +628,8 @@ const UserInfoModal: React.FC<UserInfoModalProps> = props => {
       return <CaptureModal {...props} />;
     case 'model':
       return <ModelModal {...props} />;
+    case 'lock_phone':
+      return <LockPhoneModal {...props} />;
     default:
       return <MethodModal {...props} />;
   }
